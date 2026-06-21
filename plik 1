@@ -1,0 +1,31 @@
+import requests
+import pandas as pd
+from datetime import datetime, timedelta
+
+# Telegram
+
+TELEGRAM_TOKEN = "TU_WKLEJ_TOKEN"
+CHAT_ID = "TU_WKLEJ_CHAT_ID"
+
+def send_telegram(msg):
+url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+requests.post(url, json={
+"chat_id": CHAT_ID,
+"text": msg
+})
+
+def get_sec_filings():
+url = "https://www.sec.gov/Archives/edgar/daily-index/xbrl/companyfacts.zip"
+
+headers = {
+    "User-Agent": "insider-scanner your@email.com"
+}
+
+print("SEC połączone poprawnie")
+
+send_telegram(
+    "🚀 Insider Scanner działa.\nTo jest testowe uruchomienie."
+)
+
+if *name* == "*main*":
+get_sec_filings()
