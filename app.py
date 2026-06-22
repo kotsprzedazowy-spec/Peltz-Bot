@@ -478,17 +478,23 @@ for ticker, buys in by_ticker.items():
             b["reasons"].append("cluster buying: 2 insiderów")
 
 
-qualified_buys = [
-    b for b in all_buys
-    if b["score"] >= MIN_SCORE
-    and b["tier"] not in [
-        "IGNORE",
-        "TOO SMALL",
-        "IGNORE MICROCAP",
-        "IGNORE BLUE CHIP",
-        "NO MARKET CAP"
-    ]
-]
+qualified_buys = []
+
+for b in all_buys:
+    if b["score"] < MIN_SCORE:
+        continue
+
+    if b["tier"] in ["IGNORE", "TOO SMALL", "IGNORE MICROCAP", "IGNORE BLUE CHIP"]:
+        continue
+
+    if b["tier"] == "NO MARKET CAP":
+        if b["value"] >= 1_000_000:
+            b["tier"] = "NO MARKET CAP BUT LARGE INSIDER BUY"
+            b["reasons"].append("brak market cap, ale zakup > 1M USD")
+            qualified_buys.append(b)
+        continue
+
+    qualified_buys.append(b)
 
 qualified_buys = sorted(qualified_buys, key=lambda x: x["score"], reverse=True)
 
