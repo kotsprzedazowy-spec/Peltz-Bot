@@ -408,6 +408,22 @@ def parse_form4(xml_url):
 
     return buys
 
+def add_months(date_str, months=6):
+    try:
+        year, month, day = map(int, date_str.split("-"))
+        month += months
+
+        while month > 12:
+            month -= 12
+            year += 1
+
+        # prosta ochrona przed końcem miesiąca
+        if day > 28:
+            day = 28
+
+        return f"{year:04d}-{month:02d}-{day:02d}"
+    except:
+        return "brak danych"
 
 #send_telegram("🔎 Peltz Bot startuje. Skanuję Form 4 pod microcap/CRVO-style insider buys...")
 
@@ -548,11 +564,12 @@ Dlaczego alert:
 Data:
 {alert['date']}
 
+six_month_date = add_months(alert["date"], 6)
+
 SEC:
 {alert['xml_url']}
 """
     send_telegram(msg)
-
 
 summary = f"""
 ✅ Skan zakończony.
@@ -582,6 +599,13 @@ Market cap: {fmt_money(buy['market_cap'])}
 Zakup/MC: {pct_mc}
 Tier: {buy['tier']}
 Score: {buy['score']}
+
+Sprzedaż akcji:
+Może technicznie sprzedać wcześniej, ale zysk ze sprzedaży przed {six_month_date} może podlegać zasadzie short-swing profit rule.
+
+Koniec 6-miesięcznego okna:
+{six_month_date}
+
 """
 
 if len(qualified_buys) > 0:
