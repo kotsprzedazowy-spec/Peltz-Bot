@@ -32,6 +32,12 @@ def send_telegram(msg):
         print("Telegram error:", e)
 
 
+# TEST — usuń albo zakomentuj po sprawdzeniu, czy GitHub Actions odpala bota co kilka minut
+send_telegram(
+    f"🧪 TEST: Peltz Bot uruchomiony\nUTC: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+)
+
+
 def safe_get(url):
     time.sleep(REQUEST_DELAY)
     try:
@@ -102,6 +108,23 @@ def fmt_money(value):
     if value >= 1_000:
         return f"{value / 1_000:.1f} tys. USD"
     return f"{value:.0f} USD"
+
+
+def add_months(date_str, months=6):
+    try:
+        year, month, day = map(int, date_str.split("-"))
+        month += months
+
+        while month > 12:
+            month -= 12
+            year += 1
+
+        if day > 28:
+            day = 28
+
+        return f"{year:04d}-{month:02d}-{day:02d}"
+    except:
+        return "brak danych"
 
 
 def get_market_cap(ticker):
@@ -408,24 +431,6 @@ def parse_form4(xml_url):
 
     return buys
 
-def add_months(date_str, months=6):
-    try:
-        year, month, day = map(int, date_str.split("-"))
-        month += months
-
-        while month > 12:
-            month -= 12
-            year += 1
-
-        # prosta ochrona przed końcem miesiąca
-        if day > 28:
-            day = 28
-
-        return f"{year:04d}-{month:02d}-{day:02d}"
-    except:
-        return "brak danych"
-
-#send_telegram("🔎 Peltz Bot startuje. Skanuję Form 4 pod microcap/CRVO-style insider buys...")
 
 seen = load_seen()
 new_seen = set(seen)
@@ -512,9 +517,13 @@ for b in all_buys:
 
     qualified_buys.append(b)
 
+
 qualified_buys = sorted(qualified_buys, key=lambda x: x["score"], reverse=True)
 
+
 for alert in qualified_buys:
+    six_month_date = add_months(alert["date"], 6)
+
     reasons_text = "\n".join([f"- {r}" for r in alert["reasons"]])
 
     pct_mc = "brak danych"
@@ -561,15 +570,20 @@ Score:
 Dlaczego alert:
 {reasons_text}
 
-Data:
+Data zakupu:
 {alert['date']}
 
-six_month_date = add_months(alert["date"], 6)
+Koniec 6-miesięcznego okna:
+{six_month_date}
+
+Sprzedaż akcji:
+Może technicznie sprzedać wcześniej, ale zysk ze sprzedaży przed {six_month_date} może podlegać zasadzie short-swing profit rule.
 
 SEC:
 {alert['xml_url']}
 """
     send_telegram(msg)
+
 
 summary = f"""
 ✅ Skan zakończony.
@@ -588,6 +602,8 @@ if all_buys:
     summary += "\nNajwiększe zakupy P:\n"
 
     for buy in sorted(all_buys, key=lambda x: x["value"], reverse=True)[:10]:
+        six_month_date = add_months(buy["date"], 6)
+
         pct_mc = "?"
         if buy["purchase_to_market_cap"] is not None:
             pct_mc = f"{buy['purchase_to_market_cap'] * 100:.3f}%"
@@ -599,13 +615,7 @@ Market cap: {fmt_money(buy['market_cap'])}
 Zakup/MC: {pct_mc}
 Tier: {buy['tier']}
 Score: {buy['score']}
-
-Sprzedaż akcji:
-Może technicznie sprzedać wcześniej, ale zysk ze sprzedaży przed {six_month_date} może podlegać zasadzie short-swing profit rule.
-
-Koniec 6-miesięcznego okna:
-{six_month_date}
-
+Koniec 6M okna: {six_month_date}
 """
 
 if len(qualified_buys) > 0:
