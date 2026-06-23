@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from pathlib import Path
 from collections import defaultdict
+import csv
 
 TELEGRAM_TOKEN = "8866928843:AAE31hNDFteGCriPVtEJOYr2gezfvRoenKg"
 CHAT_ID = "6306627189"
@@ -59,6 +60,37 @@ def load_seen():
 def save_seen(seen):
     STATE_FILE.write_text(json.dumps(sorted(list(seen)), indent=2))
 
+def save_alerts_to_csv(alerts):
+    file_exists = Path("alerts.csv").exists()
+
+    with open("alerts.csv", "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "date", "ticker", "company", "owner", "role",
+                "value", "market_cap", "purchase_to_market_cap",
+                "increase_pct", "score", "tier", "xml_url"
+            ]
+        )
+
+        if not file_exists:
+            writer.writeheader()
+
+        for alert in alerts:
+            writer.writerow({
+                "date": alert.get("date"),
+                "ticker": alert.get("ticker"),
+                "company": alert.get("company"),
+                "owner": alert.get("owner"),
+                "role": alert.get("role"),
+                "value": alert.get("value"),
+                "market_cap": alert.get("market_cap"),
+                "purchase_to_market_cap": alert.get("purchase_to_market_cap"),
+                "increase_pct": alert.get("increase_pct"),
+                "score": alert.get("score"),
+                "tier": alert.get("tier"),
+                "xml_url": alert.get("xml_url")
+            })
 
 def clean_tag(tag):
     return tag.split("}", 1)[1] if "}" in tag else tag
@@ -652,6 +684,9 @@ Koniec 6M okna: {six_month_date}
 
 if len(qualified_buys) > 0:
     send_telegram(summary)
+
+if len(qualified_buys) > 0:
+    save_alerts_to_csv(qualified_buys)
 
 save_seen(new_seen)
 print(summary)
