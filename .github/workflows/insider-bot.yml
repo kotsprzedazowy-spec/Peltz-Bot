@@ -2,8 +2,8 @@ name: Peltz Bot Insider Scanner
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "*/5 * * * *"
+schedule:
+  - cron: "*/10 * * * *"
 
 jobs:
   run-bot:
