@@ -9,8 +9,8 @@ from collections import defaultdict
 TELEGRAM_TOKEN = "8866928843:AAE31hNDFteGCriPVtEJOYr2gezfvRoenKg"
 CHAT_ID = "6306627189"
 
-DAYS_BACK = 5
-MAX_FORM4_TO_PARSE = 3000
+DAYS_BACK = 1
+MAX_FORM4_TO_PARSE = 500
 REQUEST_DELAY = 0.15
 
 MIN_MARKET_CAP = 20_000_000
@@ -518,6 +518,23 @@ for b in all_buys:
     qualified_buys.append(b)
 
 
+# Deduplikacja alertów: ten sam ticker + insider + data + wartość zakupu
+deduped_alerts = {}
+for b in qualified_buys:
+    key = (
+        b.get("ticker"),
+        b.get("owner"),
+        b.get("date"),
+        round(b.get("value", 0), 2)
+    )
+
+    if key not in deduped_alerts:
+        deduped_alerts[key] = b
+    else:
+        if b["score"] > deduped_alerts[key]["score"]:
+            deduped_alerts[key] = b
+
+qualified_buys = list(deduped_alerts.values())
 qualified_buys = sorted(qualified_buys, key=lambda x: x["score"], reverse=True)
 
 
@@ -601,7 +618,22 @@ Alertów jakościowych:
 if all_buys:
     summary += "\nNajwiększe zakupy P:\n"
 
-    for buy in sorted(all_buys, key=lambda x: x["value"], reverse=True)[:10]:
+    deduped_all_buys = {}
+    for buy in all_buys:
+        key = (
+            buy.get("ticker"),
+            buy.get("owner"),
+            buy.get("date"),
+            round(buy.get("value", 0), 2)
+        )
+
+        if key not in deduped_all_buys:
+            deduped_all_buys[key] = buy
+        else:
+            if buy["value"] > deduped_all_buys[key]["value"]:
+                deduped_all_buys[key] = buy
+
+    for buy in sorted(deduped_all_buys.values(), key=lambda x: x["value"], reverse=True)[:10]:
         six_month_date = add_months(buy["date"], 6)
 
         pct_mc = "?"
